@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: phpmyadmin
+spec:
+    selector:
+        matchLabels:
+            app: phpmyadmin
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: phpmyadmin
+        spec:
+            volumes:
+            - name: www
+              emptyDir: {}
+            containers:
+            - name: phpmyadmin
+              image: phpmyadmin:rde-oliv
+              ports:
+              - containerPort: 5000
+              volumeMounts:
+              - name: www
+                mountPath: /www
+              lifecycle:
+                  postStart:
+                      exec:
+                          command: ["/bin/sh", "-c", "cp -r /app/. /www"]
+            - name: php
+              image: php:rde-oliv
+              ports:
+              - containerPort: 9000
+              volumeMounts:
+              - name: www
+                mountPath: /www
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpmyadmin
+spec:
+  ports:
+  - name: phpmyadmin
+    port: 5000
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: phpmyadmin
+  type: LoadBalancer
+  loadBalancerIP: 192.168.99.100

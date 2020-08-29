@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: wordpress
+spec:
+    selector:
+        matchLabels:
+            app: wordpress
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: wordpress
+        spec:
+            volumes:
+            - name: www
+              emptyDir: {}
+            containers:
+            - name: wordpress
+              image: wordpress:rde-oliv
+              ports:
+              - containerPort: 5050
+              volumeMounts:
+              - name: www
+                mountPath: /www
+              lifecycle:
+                  postStart:
+                      exec:
+                          command: ["/bin/sh", "-c", "cp -r /app/. /www"]
+            - name: php
+              image: php:rde-oliv
+              ports:
+              - containerPort: 9000
+              volumeMounts:
+              - name: www
+                mountPath: /www
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress
+spec:
+  ports:
+  - name: wordpress
+    port: 5050
+    protocol: TCP
+    targetPort: 5050
+  selector:
+    app: wordpress
+  type: LoadBalancer
+  loadBalancerIP: 192.168.99.99
